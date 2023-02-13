@@ -42,83 +42,53 @@ python main.py --dataset cifar \
 &nbsp;
 
 #### Our training path
-Since we adopt the basic training structure, most of the training steps remain the same, but we have added a few arguments
-* -\-estimator-loss = **worst** (worst-case mutual information estimation) / **normal** (normal-case mutual information estimation)
+Since we adopt the basic training structure, most of the training steps remain the same, but we have added a few arguments.
+Training happens in the order of, robust, privacy attack, privacy protection, utility, then all-loss, under each epoch.
+* -\-task = **train-all** (suggest to use train-all, set parts that aren't needed to 0)
+* -\-robust_rounds = **0** (# of sub-rounds of original training rounds by Sicheng Zhu, Xiao Zhang, and David Evans)
+* -\-privacy_cla = **0** (# of sub-rounds of privacy cla inference attack training)
+* -\-privacy_rounds = **0** (# of sub-rounds of privacy defense training)
+* -\-utility_rounds = **0** (# of sub-rounds of JSD utility, similar to robust_rounds function, can elect to run 0)
+* -\-all_rounds = **0** (# of sub-rounds of all-loss based training)
+* -\-alpha = **0** (alpha set between 0 and 1 to determine the weight given to robust loss)
+* -\-beta = **0** (alpha set between 0 and 1 to determine the weight given to privacy loss)
 
-For example, to test the worst-case mutual information of ResNet18, run
+For example, to train encoder under the worst-case mutual information of ResNet18, run
 ```bash
 python main.py --dataset cifar \
 --data /path/to/dataset \
 --out-dir /path/to/output \
---task estimate-mi \
+--task train-all \
 --representation-type layer \
 --estimator-loss worst \
 --arch resnet18 \
---epoch 500 --lr 1e-4 --step-lr 10000 --workers 2 \
---attack-lr=1e-2 --constraint inf --eps 8/255 \
---resume /path/to/saved/model/checkpoint.pt.best \
---exp-name estimator_worst__resnet18_adv \
---no-store
+--epoch 20 --robust_rounds 0 --privacy_cla 0 --privacy_rounds 0 \
+--utility_rounds 0 --all_rounds 1 --alpha 0.4 --beta 0.6 \
+--lr 1e-3 --step-lr 100 --workers 2 \
+--attack-lr 1e-2 --constraint inf --eps 8/255 \
+--exp-name estimator_worst__resnet18_adv
 ```
-or to test on the baseline-h, run
-```bash
-python main.py --dataset cifar \
---data /path/to/dataset \
---out-dir /path/to/output \
---task estimate-mi \
---representation-type layer \
---estimator-loss worst \
---arch baseline_mlp \
---epoch 500 --lr 1e-4 --step-lr 10000 --workers 2 \
---attack-lr=1e-2 --constraint inf --eps 8/255 \
---resume /path/to/saved/model/checkpoint.pt.best \
---exp-name estimator_worst__baseline_mlp_adv \
---no-store
-```
-&nbsp;
 
-#### Learn Representations
-Set **task=train-encoder** to learn a representation using our training principle. For train by worst-case mutual information maximization, we can use other lower-bound of mutual information as surrogate for our target, which may have slightly better empirical performance (e.g. nce). Please refer to arxiv.org/abs/1808.06670 for more information.
-Optional commands:
-* -\-estimator-loss = **worst** (worst-case mutual information maximization) / **normal** (normal-case mutual information maximization)
-* -\-va-mode = **dv** (Donsker-Varadhan representation) / **nce** (Noise-Contrastive Estimation) / **fd** (fenchel dual representation)
-* -\-arch = **basic_encoder** ([Hjelm et al.](https://arxiv.org/abs/1808.06670)) / ...
-
-
-Example:
-```bash
-python main.py --dataset cifar \
---task train-encoder \
---data /path/to/dataset \
---out-dir /path/to/output \
---arch basic_encoder \
---representation-type layer \
---estimator-loss worst \
---epoch 500 --lr 1e-4 --step-lr 10000 --workers 2 \
---attack-lr=1e-2 --constraint inf --eps 8/255 \
---exp-name learned_encoder
-```
-&nbsp;
-
-#### Test on Downstream Classifications (Figure 4, 5, 6; Table 1, 3)
+#### Test on Downstream Classifications
 Set **task=train-classifier** to test the classification accuracy of learned representations. 
 Optional commands:
-* -\-classifier-loss = **robust** (adversarial classification) / **standard** (standard classification)
+* -\-task = train-classifier (train cla) / train-privacy_classifier (inference attack, only mlp)
+* -\-classifier-loss = **robust** (adversarial cla) / **standard** (standard cla)
 * -\-classifier-arch = **mlp** (mlp as downstream classifier) /  **linear** (linear classifier as downstream classifier)
 
 Example:
 ```bash
 python main.py --dataset cifar \
---task train-classifier \
+--task train-privacy_classifier \
 --data /path/to/dataset \
 --out-dir /path/to/output \
 --arch basic_encoder \
 --classifier-arch mlp \
 --representation-type layer \
---classifier-loss robust \
---epoch 500 --lr 1e-4 --step-lr 10000 --workers 2 \
+--classifier-loss standard \
+--epoch 50 --lr 1e-3 --step-lr 100 --workers 2 \
 --attack-lr=1e-2 --constraint inf --eps 8/255 \
---resume /path/to/saved/model/checkpoint.pt.latest \
+--resume /path/to/output/estimator_worst__resnet18_adv/checkpoint.pt.latest \
 --exp-name test_learned_encoder
 ```
 
