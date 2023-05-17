@@ -1,4 +1,4 @@
-## AdvRPPRL: Towards Adversarially Robust and Privacy-Preserving Representation Learning via Information Theory
+## ARPRL: Adversarially Robust and Privacy-Preserving Representation Learning via Information Theory
 Our implementation is based on code from Learning Adversarially Robust Representations via Worst-Case Mutual Information
 Maximization [(ICML 2020)](https://arxiv.org/abs/2002.11798) and our team's privacy presentation via information theory 
 concept. For all the scripts, we assume the working directory to be the root folder of our code. You can reference the
